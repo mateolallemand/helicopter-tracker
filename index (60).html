@@ -1,0 +1,1911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helicopter Tracker Pro</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        emailjs.init('Fdurs7Xdm-Kt4MqYr');
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* DRAMATIC HEADER */
+        .header-section {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(96, 165, 250, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect fill="rgba(255,255,255,0.03)" width="50" height="50"/><rect fill="rgba(255,255,255,0.03)" x="50" y="50" width="50" height="50"/></svg>');
+            opacity: 0.5;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #000000;
+            font-weight: 800;
+            letter-spacing: -1px;
+            position: relative;
+            z-index: 1;
+        }
+        .subtitle {
+            color: rgba(0, 0, 0, 0.7);
+            margin-bottom: 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .controls {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .control-group.buttons {
+            grid-column: 1 / -1;
+        }
+        .control-group.stacked {
+            grid-row: span 2;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: #60a5fa;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input, select {
+            padding: 14px;
+            border: 2px solid #333333;
+            border-radius: 12px;
+            background: #0a0a0a;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.2);
+            transform: translateY(-2px);
+        }
+        button {
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: #000000;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(96, 165, 250, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        button:hover::before {
+            left: 100%;
+        }
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(96, 165, 250, 0.6);
+        }
+        button:active {
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        button.secondary {
+            background: linear-gradient(135deg, #333333 0%, #4a4a4a 100%);
+            color: #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        button.secondary:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .panel {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+        }
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(96, 165, 250, 0.3);
+        }
+        .panel h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #60a5fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+        }
+        #map {
+            height: 500px;
+            border-radius: 16px;
+            border: 2px solid rgba(96, 165, 250, 0.3);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            padding: 30px 20px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(96, 165, 250, 0.4);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(96, 165, 250, 0.6);
+        }
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #000000;
+            margin-bottom: 5px;
+            position: relative;
+        }
+        .stat-label {
+            color: rgba(0, 0, 0, 0.8);
+            font-size: 0.9rem;
+            margin-top: 5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+        .flight-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .flight-list::-webkit-scrollbar {
+            width: 10px;
+        }
+        .flight-list::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border-radius: 10px;
+        }
+        .flight-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            border-radius: 10px;
+        }
+        .flight-list::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        .flight-item {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            padding: 18px;
+            margin-bottom: 15px;
+            border-radius: 16px;
+            border-left: 5px solid #60a5fa;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .flight-item:hover {
+            transform: translateX(8px);
+            box-shadow: 0 6px 20px rgba(96, 165, 250, 0.3);
+            border-left-width: 8px;
+        }
+        .flight-item.low {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg, #1a0a0a 0%, #2a1a1a 100%);
+        }
+        .flight-item.low:hover {
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+        }
+        .flight-callsign {
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+        }
+        .flight-details {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .lookup-link {
+            font-size: 0.8rem;
+            color: #60a5fa;
+            text-decoration: none;
+            padding: 6px 12px;
+            background: #1a2332;
+            border-radius: 6px;
+            margin-right: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .lookup-link:hover {
+            background: #2a3342;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(96, 165, 250, 0.2);
+        }
+        .email-btn {
+            font-size: 0.8rem;
+            color: white;
+            background: #16a34a;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .email-btn:hover {
+            background: #15803d;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.3);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 5% auto;
+            padding: 35px;
+            border: 1px solid #333333;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            color: #e2e8f0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal-content h3 {
+            color: #60a5fa;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .close {
+            color: #94a3b8;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close:hover {
+            color: #60a5fa;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .helicopter-marker {
+            background: none !important;
+            border: none !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .leaflet-popup-content-wrapper {
+            background: #ffffff;
+            color: #1f2937;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e5e7eb;
+        }
+        .leaflet-popup-tip {
+            background: #ffffff;
+        }
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            background: #0a0a0a;
+            color: #e2e8f0;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+        }
+        .form-group textarea {
+            min-height: 300px;
+            resize: vertical;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .status.loading {
+            background: #3b82f6;
+            color: #000000;
+        }
+        .status.success {
+            background: #60a5fa;
+            color: #000000;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #333333;
+        }
+        .tab {
+            padding: 14px 28px;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        .tab:hover {
+            color: #e2e8f0;
+            background: rgba(96, 165, 250, 0.05);
+        }
+        .tab.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .info-box {
+            background: #1a1a1a;
+            border-left: 4px solid #60a5fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 4px rgba(96, 165, 250, 0.1);
+        }
+        .info-box a {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-section">
+            <h1>Helicopter Tracker Pro</h1>
+            <p class="subtitle">Monitor, track, and document low-flying helicopters in your neighborhood.</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Latitude</label>
+                <input type="number" id="latitude" value="40.7128" step="0.0001">
+            </div>
+            <div class="control-group">
+                <label>Longitude</label>
+                <input type="number" id="longitude" value="-74.0060" step="0.0001">
+            </div>
+            <div class="control-group">
+                <label>Radius (km)</label>
+                <input type="number" id="radius" value="10" min="1" max="50">
+            </div>
+            <div class="control-group">
+                <label>Low Altitude Threshold (ft)</label>
+                <input type="number" id="altitudeThreshold" value="1500" step="100">
+                <button id="saveThresholdBtn" style="margin-top: 10px; width: 100%; padding: 8px; font-size: 0.85rem; background: #10b981; border: none; border-radius: 6px; color: white; cursor: pointer;">Save Preferred Threshold</button>
+            </div>
+            <div class="control-group">
+                <label>Location (City or Address)</label>
+                <input type="text" id="locationName" placeholder="e.g., Rye, NY or Manhattan, NYC">
+                <button id="geocodeBtn" style="margin-top: 10px; width: 100%; padding: 10px; font-size: 0.9rem;">Search Location</button>
+                <div id="geocodeStatus" style="margin-top: 5px; font-size: 0.8rem; color: #94a3b8;">Tip: Use "City, State" format for best results</div>
+                <select id="geocodeResults" style="margin-top: 10px; width: 100%; display: none; padding: 10px; border-radius: 8px; background: #0a0a0a; color: #e2e8f0; border: 2px solid #333333;"></select>
+            </div>
+            <div class="control-group" style="grid-row: span 2; display: flex; flex-direction: column; justify-content: space-between;">
+                <div style="margin-bottom: 15px;">
+                    <label>OpenSky Username (optional)</label>
+                    <input type="text" id="openskyUsername" placeholder="Your OpenSky username">
+                </div>
+                <div>
+                    <label>OpenSky Password (optional)</label>
+                    <div style="position: relative;">
+                        <input type="password" id="openskyPassword" placeholder="Your OpenSky password" style="padding-right: 40px;">
+                        <button id="togglePassword" type="button" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 5px 10px;">👁️</button>
+                    </div>
+                    <button id="saveCredsBtn" style="margin-top: 10px; width: 100%; padding: 10px; font-size: 0.9rem;">Save Credentials</button>
+                </div>
+            </div>
+            <div class="control-group buttons" style="grid-column: 1 / -1;">
+                <div class="info-box">
+                    💡 Create a free OpenSky account at <a href="https://opensky-network.org/login" target="_blank" style="color: #60a5fa;">opensky-network.org</a> to avoid rate limits
+                    <br><br>
+                    ⚖️ <strong>Legal Minimums:</strong> 500ft in non-congested areas, 1000ft in congested areas
+                </div>
+            </div>
+            <div class="control-group buttons">
+                <div class="button-group">
+                    <button id="startBtn">Start Tracking</button>
+                    <button id="exportBtn" class="secondary">Export Data</button>
+                    <button id="clearBtn" class="secondary">Clear History</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalFlights">0</div>
+                <div class="stat-label">All Helicopters</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lowFlightsCount">0</div>
+                <div class="stat-label">Below Threshold</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgAltitude">0</div>
+                <div class="stat-label">Avg Altitude (ft)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="historicalTotal">0</div>
+                <div class="stat-label">Tracked Total</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="liveTab">Live Tracking</button>
+            <button class="tab" data-tab="historyTab">Recent History</button>
+            <button class="tab" data-tab="allHistoryTab">All History</button>
+            <button class="tab" data-tab="offendersTab">Repeat Offenders</button>
+        </div>
+
+        <div id="liveTab" class="tab-content active">
+            <div class="grid">
+                <div class="panel">
+                    <h2>Live Map</h2>
+                    <div id="map"></div>
+                    <div id="mapStatus" class="status">Not tracking</div>
+                </div>
+                <div class="panel">
+                    <h2>Current Activity</h2>
+                    <canvas id="activityChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="panel">
+                    <h2>All Helicopters</h2>
+                    <div class="flight-list" id="currentFlights">
+                        <p style="color: #64748b; text-align: center; padding: 20px;">Start tracking to see flights</p>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>Low Altitude Alerts ⚠️</h2>
+                    <div class="flight-list" id="lowFlights">
+                        <p style="color: #64748b; text-align: center; padding: 20px;">No low altitude flights detected</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="historyTab" class="tab-content">
+            <div class="panel">
+                <h2>Recent Flight History (Last 100 Flights)</h2>
+                <div class="flight-list" id="historyList">
+                    <p style="color: #64748b; text-align: center; padding: 20px;">No flight history yet</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="allHistoryTab" class="tab-content">
+            <div class="panel">
+                <h2>Flights by Location</h2>
+                <p style="color: #94a3b8; margin-bottom: 15px;">Breakdown of tracked flights by monitoring location</p>
+                <div style="max-height: 250px; margin-bottom: 30px;">
+                    <canvas id="locationChart"></canvas>
+                </div>
+                <div id="locationBreakdown" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                </div>
+            </div>
+            <div class="panel">
+                <h2>All Flight History (Total: <span id="allHistoryCount">0</span>)</h2>
+                <p style="color: #94a3b8; margin-bottom: 15px;">Complete record of all tracked flights</p>
+                <div class="flight-list" id="allHistoryList">
+                    <p style="color: #64748b; text-align: center; padding: 20px;">No flight history yet</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="offendersTab" class="tab-content">
+            <div class="panel">
+                <h2>Repeat Offenders</h2>
+                <p style="color: #94a3b8; margin-bottom: 15px;">Aircraft with multiple low-altitude violations</p>
+                <div class="flight-list" id="offendersList">
+                    <p style="color: #64748b; text-align: center; padding: 20px;">No repeat offenders yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="background: #1a1a1a; padding: 20px; border-radius: 12px; margin-top: 40px; text-align: center; color: #94a3b8; font-size: 0.9rem;">
+        <p style="margin-bottom: 10px;">
+            Flight data provided by <a href="https://opensky-network.org/" target="_blank" style="color: #60a5fa; text-decoration: none;">OpenSky Network</a>
+        </p>
+        <p style="margin-bottom: 10px;">
+            Map tiles © <a href="https://www.openstreetmap.org/copyright" target="_blank" style="color: #60a5fa; text-decoration: none;">OpenStreetMap</a> contributors
+        </p>
+        <p style="font-size: 0.8rem; color: #64748b;">
+            Helicopter Tracker Pro © 2025 - For informational purposes only
+        </p>
+    </footer>
+
+    <!-- Email Modal -->
+    <div id="emailModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEmailModal()">&times;</span>
+            <h3>File Noise Complaint</h3>
+            <div class="form-group">
+                <label>Aircraft Information</label>
+                <input type="text" id="emailIcao" readonly>
+            </div>
+            <div class="form-group">
+                <label>Recipient Email</label>
+                <input type="email" id="recipientEmail" placeholder="noise@aviation.gov">
+            </div>
+            <div class="form-group">
+                <label>Subject</label>
+                <input type="text" id="emailSubject" value="Formal Complaint: Low-Altitude Helicopter Noise">
+            </div>
+            <div class="form-group">
+                <label>Message</label>
+                <textarea id="emailBody"></textarea>
+            </div>
+            <div class="button-group">
+                <button onclick="sendEmail()">Open in Email Client</button>
+                <button onclick="copyEmailTemplate()" class="secondary">Copy Template</button>
+                <button onclick="closeEmailModal()" class="secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let markers = [];
+        let trackingInterval;
+        let isTracking = false;
+        let historicalData = [];
+        let aircraftRegistry = {};
+        let activityData = [];
+        let activityChart;
+        let locationChart;
+        let lastErrorShown = null; // Track last error to avoid spam
+        let currentAircraftData = []; // Store current aircraft for filtering
+
+        // Load data from localStorage
+        function loadData() {
+            const saved = localStorage.getItem('helicopterTrackerData');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    historicalData = data.historicalData || [];
+                    
+                    // Load saved threshold
+                    if (data.preferredThreshold) {
+                        document.getElementById('altitudeThreshold').value = data.preferredThreshold;
+                    }
+                    
+                    // Convert callsigns arrays back to Sets
+                    aircraftRegistry = {};
+                    if (data.aircraftRegistry) {
+                        Object.keys(data.aircraftRegistry).forEach(key => {
+                            const aircraft = data.aircraftRegistry[key];
+                            aircraftRegistry[key] = {
+                                ...aircraft,
+                                callsigns: new Set(aircraft.callsigns || [])
+                            };
+                        });
+                    }
+                    
+                    // Update UI with loaded data
+                    updateHistoricalStats();
+                    updateOffendersList();
+                    updateHistoryList();
+                    updateAllHistoryList();
+                    
+                    console.log('Loaded', historicalData.length, 'historical flights');
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    localStorage.removeItem('helicopterTrackerData');
+                    historicalData = [];
+                    aircraftRegistry = {};
+                }
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            try {
+                // Convert Sets to arrays for JSON serialization
+                const registryForSave = {};
+                Object.keys(aircraftRegistry).forEach(key => {
+                    registryForSave[key] = {
+                        ...aircraftRegistry[key],
+                        callsigns: Array.from(aircraftRegistry[key].callsigns)
+                    };
+                });
+                
+                const data = {
+                    historicalData: historicalData,
+                    aircraftRegistry: registryForSave,
+                    preferredThreshold: parseFloat(document.getElementById('altitudeThreshold').value),
+                    savedAt: new Date().toISOString()
+                };
+                localStorage.setItem('helicopterTrackerData', JSON.stringify(data));
+                console.log('Data saved:', historicalData.length, 'flights');
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        // Initialize map
+        function initMap(lat, lon) {
+            if (map) {
+                map.remove();
+            }
+            map = L.map('map', {
+                zoomControl: true,
+                preferCanvas: true
+            }).setView([lat, lon], 11);
+            
+            // Light themed map tiles (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Your location marker with pulse effect
+            L.circleMarker([lat, lon], {
+                radius: 10,
+                fillColor: "#60a5fa",
+                color: "#ffffff",
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(map).bindPopup("<strong>📍 Your Location</strong>");
+            
+            // Add radius circle to show search area
+            const radiusKm = parseFloat(document.getElementById('radius').value);
+            L.circle([lat, lon], {
+                radius: radiusKm * 1000, // convert to meters
+                color: '#60a5fa',
+                fillColor: '#60a5fa',
+                fillOpacity: 0.05,
+                weight: 2,
+                dashArray: '5, 10'
+            }).addTo(map);
+        }
+
+        // Initialize chart
+        function initChart() {
+            try {
+                console.log('Initializing chart...');
+                const canvas = document.getElementById('activityChart');
+                console.log('Canvas element:', canvas);
+                
+                if (!canvas) {
+                    console.error('Canvas element not found!');
+                    return;
+                }
+                
+                const ctx = canvas.getContext('2d');
+                console.log('Canvas context:', ctx);
+                
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js library not loaded!');
+                    return;
+                }
+                
+                activityChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Helicopters Detected',
+                            data: [],
+                            borderColor: '#60a5fa',
+                            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#60a5fa'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                labels: { 
+                                    color: '#e2e8f0',
+                                    font: { size: 14 }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { 
+                                    color: '#94a3b8',
+                                    font: { size: 12 }
+                                },
+                                grid: { 
+                                    color: 'rgba(100, 116, 139, 0.3)',
+                                    drawBorder: true,
+                                    borderColor: '#64748b'
+                                }
+                            },
+                            x: {
+                                ticks: { 
+                                    color: '#94a3b8',
+                                    font: { size: 11 },
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                grid: { 
+                                    color: 'rgba(100, 116, 139, 0.2)',
+                                    drawBorder: true,
+                                    borderColor: '#64748b'
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Chart initialized successfully:', activityChart);
+                
+                // Initialize location chart
+                const locationCanvas = document.getElementById('locationChart');
+                if (locationCanvas) {
+                    locationChart = new Chart(locationCanvas, {
+                        type: 'bar',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'Flights by Location',
+                                data: [],
+                                backgroundColor: '#3b82f6',
+                                borderColor: '#2563eb',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 3,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { 
+                                        color: '#94a3b8', 
+                                        font: { size: 12 },
+                                        stepSize: 1
+                                    },
+                                    grid: { color: 'rgba(100, 116, 139, 0.3)' }
+                                },
+                                x: {
+                                    ticks: { 
+                                        color: '#94a3b8', 
+                                        font: { size: 11 }
+                                    },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error initializing chart:', error);
+            }
+        }
+
+        // Fetch helicopter data with authentication
+        async function fetchHelicopters(lat, lon, radius) {
+            const lamin = lat - (radius / 111);
+            const lamax = lat + (radius / 111);
+            const lomin = lon - (radius / (111 * Math.cos(lat * Math.PI / 180)));
+            const lomax = lon + (radius / (111 * Math.cos(lat * Math.PI / 180)));
+
+            // Get credentials from input fields
+            const username = document.getElementById('openskyUsername').value.trim();
+            const password = document.getElementById('openskyPassword').value.trim();
+            
+            // Build the OpenSky API URL with embedded credentials if provided
+            let openskyUrl;
+            if (username && password) {
+                // Embed credentials in URL (proxy-compatible method)
+                openskyUrl = `https://${encodeURIComponent(username)}:${encodeURIComponent(password)}@opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`;
+            } else {
+                openskyUrl = `https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`;
+            }
+            
+            // Try multiple CORS proxies with fallback
+            const proxies = [
+                'https://corsproxy.io/?',
+                'https://api.codetabs.com/v1/proxy?quest=',
+                'https://api.allorigins.win/raw?url='
+            ];
+            
+            let response = null;
+            let lastError = null;
+            
+            for (const proxyUrl of proxies) {
+                const url = proxyUrl + encodeURIComponent(openskyUrl);
+                
+                try {
+                    console.log('Trying proxy:', proxyUrl.split('?')[0]);
+                    response = await fetch(url, { timeout: 8000 });
+                    
+                    if (response.ok) {
+                        console.log('✅ Proxy succeeded:', proxyUrl.split('?')[0]);
+                        break; // Success! Exit the loop
+                    } else {
+                        console.log('❌ Proxy returned error:', response.status);
+                        lastError = `HTTP ${response.status}`;
+                        response = null;
+                    }
+                } catch (error) {
+                    console.log('❌ Proxy failed:', error.message);
+                    lastError = error.message;
+                    response = null;
+                }
+            }
+            
+            if (!response || !response.ok) {
+                console.error('All proxies failed. Last error:', lastError);
+                if (lastErrorShown !== 'proxy_failed') {
+                    alert('❌ ALL PROXIES FAILED\n\nCannot connect to OpenSky API through any proxy.\n\nPossible issues:\n1. Internet connection problems\n2. All CORS proxies are down\n3. OpenSky API is offline\n\nTry:\n- Check your internet connection\n- Refresh the page\n- Try again in a few minutes\n\n(This alert will only show once)');
+                    lastErrorShown = 'proxy_failed';
+                }
+                return [];
+            }
+            
+            try {
+                const data = await response.json();
+                
+                console.log('API returned states:', data.states ? data.states.length : 0);
+                
+                // Log what categories we're seeing
+                if (data.states && data.states.length > 0) {
+                    const categories = data.states.map(s => s[17]).filter(c => c !== null);
+                    const uniqueCategories = [...new Set(categories)];
+                    console.log('Categories found in data:', uniqueCategories);
+                    console.log('Total with category 7 (helicopter):', categories.filter(c => c === 7).length);
+                }
+                
+                let debugCount = 0;
+                console.log('Filtering aircraft within radius:', radius, 'km from', lat, lon);
+                const helicopters = data.states ? data.states.filter(state => {
+                    const altitude = state[7];
+                    const geo_altitude = state[13];
+                    const category = state[17];
+                    const aircraftLat = state[6];
+                    const aircraftLon = state[5];
+                    
+                    // Skip aircraft with no position data
+                    if (aircraftLat === null || aircraftLon === null) {
+                        return false;
+                    }
+                    
+                    // Calculate distance from center point
+                    const R = 6371; // Earth's radius in km
+                    const dLat = (aircraftLat - lat) * Math.PI / 180;
+                    const dLon = (aircraftLon - lon) * Math.PI / 180;
+                    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                              Math.cos(lat * Math.PI / 180) * Math.cos(aircraftLat * Math.PI / 180) *
+                              Math.sin(dLon/2) * Math.sin(dLon/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    const distance = R * c; // Distance in km
+                    
+                    // Log ALL distances to debug
+                    console.log('Aircraft distance check:', {
+                        icao: state[0],
+                        callsign: state[1],
+                        distance: Math.round(distance * 10) / 10 + ' km',
+                        radius: radius + ' km',
+                        withinRadius: distance <= radius,
+                        position: [Math.round(aircraftLat * 100) / 100, Math.round(aircraftLon * 100) / 100]
+                    });
+                    
+                    // Skip aircraft outside radius
+                    if (distance > radius) {
+                        return false;
+                    }
+                    
+                    // Skip aircraft with no altitude data
+                    if (altitude === null && geo_altitude === null) {
+                        return false;
+                    }
+                    
+                    const altitudeFt = geo_altitude ? geo_altitude * 3.28084 : (altitude ? altitude * 3.28084 : 0);
+                    
+                    // Only show aircraft under 5000 ft
+                    if (altitudeFt > 5000 || altitudeFt <= 0) {
+                        return false;
+                    }
+                    
+                    const threshold = parseFloat(document.getElementById('altitudeThreshold').value);
+                    
+                    // Show all low-flying aircraft, but classify them
+                    const velocity = state[9]; // m/s
+                    const vertical_rate = state[11]; // m/s
+                    const callsign = state[1] ? state[1].trim() : '';
+                    
+                    const speedKnots = velocity ? velocity * 1.944 : 0;
+                    const verticalRateFtMin = vertical_rate ? Math.abs(vertical_rate * 196.85) : 0;
+                    
+                    // Determine if likely helicopter
+                    const isLikelyHelicopter = category === 7 || 
+                                              (altitudeFt < 800 && speedKnots >= 40 && speedKnots <= 85) ||
+                                              /^(HEMS|POLICE|SHERIFF|MEDIC|LIFE\d|AIR\d|STAR\d)/i.test(callsign);
+                    
+                    // Determine if likely plane
+                    const isLikelyPlane = !isLikelyHelicopter && 
+                                         (speedKnots > 85 || altitudeFt > 800 || verticalRateFtMin > 500);
+                    
+                    // Store aircraft type for later use
+                    state.aircraftType = isLikelyHelicopter ? 'helicopter' : 'plane';
+                    
+                    // Mark if below threshold (for display purposes)
+                    const isLowFlying = altitudeFt < threshold && altitudeFt > 0;
+                    state.isLowFlying = isLowFlying;
+                    
+                    if (isLowFlying) {
+                        console.log('✅ LOW ALTITUDE:', {
+                            callsign: callsign || 'Unknown',
+                            type: state.aircraftType,
+                            altitude: Math.round(altitudeFt),
+                            speed: Math.round(speedKnots),
+                            category: category
+                        });
+                    }
+                    
+                    // Return ALL aircraft (not just low flying ones)
+                    return true;
+                    
+                }) : [];
+                
+                console.log('Filtered to:', helicopters.length, 'helicopters');
+                
+                return helicopters;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                
+                // Show user-friendly error if not already shown by status checks
+                if (error.message === 'Failed to fetch' && lastErrorShown !== 'connection') {
+                    alert('❌ CONNECTION ERROR\n\nCannot connect to OpenSky API.\n\nPossible issues:\n1. Internet connection down\n2. OpenSky API is offline\n3. CORS proxy is down\n\nTry:\n- Check your internet\n- Refresh the page\n- Try again in a few minutes\n\n(This alert will only show once)');
+                    lastErrorShown = 'connection';
+                }
+                
+                return [];
+            }
+        }
+
+        // Open FAA Registry in new window
+        function openFAARegistry(nNumber) {
+            console.log('=== FAA Registry Button Clicked ===');
+            console.log('N-Number received:', nNumber);
+            
+            if (!nNumber || nNumber === 'Non-US') {
+                alert('This aircraft is not registered in the US.');
+                return;
+            }
+            
+            const url = 'https://registry.faa.gov/AircraftInquiry/Search/NNumberResult?nNumberTxt=' + encodeURIComponent(nNumber);
+            console.log('Opening FAA URL:', url);
+            
+            // Create a temporary link and click it
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('FAA Registry link opened');
+        }
+
+        // Update the total flights label based on filter
+
+        // Convert ICAO24 to N-Number (US aircraft only)
+        function icaoToNNumber(icao24) {
+            if (!icao24 || icao24.length !== 6) return null;
+            
+            const icaoInt = parseInt(icao24, 16);
+            if (icaoInt >= 0xA00000 && icaoInt <= 0xADF7C7) {
+                const offset = icaoInt - 0xA00000;
+                const suffix = offset % 1000;
+                const serial = Math.floor(offset / 1000);
+                
+                if (serial < 100) {
+                    return `N${serial}${String.fromCharCode(65 + Math.floor(suffix / 26))}${String.fromCharCode(65 + (suffix % 26))}`;
+                } else if (serial < 10000) {
+                    return `N${serial}${String.fromCharCode(65 + (suffix % 26))}`;
+                } else {
+                    return `N${serial}`;
+                }
+            }
+            return null;
+        }
+
+        // Record flight data
+        let recordedThisSession = new Set(); // Track what we've already recorded this session
+
+        function recordFlight(heli, threshold, locationName) {
+            const [icao24, callsign, origin, time_position, last_contact, longitude, latitude, baro_altitude, on_ground, velocity, true_track, vertical_rate, sensors, geo_altitude] = heli;
+            const altitudeFt = geo_altitude * 3.28084;
+            const isLow = altitudeFt < threshold;
+            
+            // Create unique key for this aircraft (ICAO + callsign)
+            const flightKey = `${icao24}_${callsign || 'Unknown'}`;
+            
+            // Skip if we've already recorded this aircraft in this tracking session
+            if (recordedThisSession.has(flightKey)) {
+                return;
+            }
+            
+            // Mark as recorded
+            recordedThisSession.add(flightKey);
+            
+            const flight = {
+                icao24: icao24,
+                callsign: callsign || 'Unknown',
+                altitude: Math.round(altitudeFt),
+                speed: velocity ? Math.round(velocity * 1.944) : null,
+                latitude: latitude,
+                longitude: longitude,
+                timestamp: new Date().toISOString(),
+                isLow: isLow,
+                location: locationName || 'Unknown'
+            };
+            
+            historicalData.push(flight);
+            
+            if (!aircraftRegistry[icao24]) {
+                aircraftRegistry[icao24] = {
+                    icao24: icao24,
+                    callsigns: new Set(),
+                    totalFlights: 0,
+                    lowFlights: 0,
+                    firstSeen: new Date().toISOString(),
+                    lastSeen: new Date().toISOString()
+                };
+            }
+            
+            const aircraft = aircraftRegistry[icao24];
+            aircraft.callsigns.add(callsign || 'Unknown');
+            aircraft.totalFlights++;
+            if (isLow) aircraft.lowFlights++;
+            aircraft.lastSeen = new Date().toISOString();
+            
+            // Save data after recording
+            saveData();
+        }
+
+        // Update map with markers
+        function updateMap(helicopters, threshold) {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            helicopters.forEach(heli => {
+                const [icao24, callsign, origin, time_position, last_contact, longitude, latitude, baro_altitude, on_ground, velocity] = heli;
+                const geo_altitude = heli[13];
+                const category = heli[17];
+                const verticalRate = heli[11];
+                const altitudeFt = Math.round(geo_altitude * 3.28084);
+                const speedKts = velocity ? Math.round(velocity * 1.944) : 0;
+                const isLow = altitudeFt < threshold;
+                
+                // Simple blue dot for all aircraft
+                const marker = L.circleMarker([latitude, longitude], {
+                    radius: 6,
+                    fillColor: '#3b82f6',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                const nNumber = icaoToNNumber(icao24) || 'Non-US';
+                
+                marker.bindPopup(`
+                    <div style="min-width: 200px; padding: 5px;">
+                        <strong style="font-size: 1.1rem; color: #2563eb;">${callsign || 'Unknown'}</strong><br>
+                        <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">
+                        <strong>ICAO24:</strong> ${icao24}<br>
+                        <strong>N-Number:</strong> ${nNumber}<br>
+                        <strong>Altitude:</strong> ${altitudeFt} ft<br>
+                        <strong>Speed:</strong> ${speedKts} knots<br>
+                    </div>
+                `);
+                
+                markers.push(marker);
+            });
+        }
+
+        // Update current flights list
+        function updateFlightList(helicopters, threshold) {
+            const listEl = document.getElementById('currentFlights');
+            if (helicopters.length === 0) {
+                listEl.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No aircraft detected</p>';
+                return;
+            }
+            
+            listEl.innerHTML = helicopters.map(heli => {
+                const [icao24, callsign] = heli;
+                const geo_altitude = heli[13];
+                const velocity = heli[9];
+                const category = heli[17];
+                const altitudeFt = Math.round(geo_altitude * 3.28084);
+                const speedKts = velocity ? Math.round(velocity * 1.944) : 0;
+                const isLow = altitudeFt < threshold;
+                const nNumber = icaoToNNumber(icao24) || 'Non-US';
+                
+                return `
+                    <div class="flight-item ${isLow ? 'low' : ''}">
+                        <div class="flight-callsign">
+                            <span>${callsign || 'Unknown'} ${isLow ? '⚠️' : ''}</span>
+                            <div>
+                                
+                                ${nNumber !== 'Non-US' ? `<button class="lookup-link" style="background: transparent; border: 1px solid #60a5fa; color: #60a5fa; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;" onclick="openFAARegistry('${nNumber}')">FAA Registry</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="flight-details">
+                            ICAO24: ${icao24} | N-Number: ${nNumber} | 
+                            Altitude: ${altitudeFt} ft | Speed: ${speedKts} knots
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update low altitude flights
+        function updateLowFlightsList(helicopters, threshold) {
+            const listEl = document.getElementById('lowFlights');
+            const lowFlights = helicopters.filter(h => {
+                const geo_altitude = h[13];
+                const altFt = geo_altitude * 3.28084;
+                return altFt < threshold;
+            });
+            
+            console.log('Low flights check: threshold=' + threshold + ', total=' + helicopters.length + ', low=' + lowFlights.length);
+            
+            if (lowFlights.length === 0) {
+                listEl.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No low altitude flights detected</p>';
+                return;
+            }
+            
+            listEl.innerHTML = lowFlights.map(heli => {
+                const [icao24, callsign] = heli;
+                const geo_altitude = heli[13];
+                const velocity = heli[9];
+                const altitudeFt = Math.round(geo_altitude * 3.28084);
+                const speedKts = velocity ? Math.round(velocity * 1.944) : 'N/A';
+                const nNumber = icaoToNNumber(icao24) || 'Non-US';
+                
+                return `
+                    <div class="flight-item low">
+                        <div class="flight-callsign">
+                            <span>${callsign || 'Unknown'} ⚠️</span>
+                            <div>
+                                
+                                ${nNumber !== 'Non-US' ? `<button class="lookup-link" style="background: transparent; border: 1px solid #60a5fa; color: #60a5fa; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;" onclick="openFAARegistry('${nNumber}')">FAA Registry</button>` : ''}
+                                <button class="email-btn" onclick="openEmailModal('${icao24}', '${callsign || 'Unknown'}', 1)">Email Complaint</button>
+                            </div>
+                        </div>
+                        <div class="flight-details">
+                            ICAO24: ${icao24} | N-Number: ${nNumber} | 
+                            Altitude: ${altitudeFt} ft | Speed: ${speedKts} knots
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update statistics
+        function updateStats(helicopters, threshold) {
+            const totalFlights = helicopters.length;
+            const lowFlights = helicopters.filter(h => {
+                const geo_altitude = h[13];
+                return (geo_altitude * 3.28084) < threshold;
+            }).length;
+            
+            const avgAltitude = helicopters.length > 0 
+                ? Math.round(helicopters.reduce((sum, h) => sum + (h[13] * 3.28084), 0) / helicopters.length)
+                : 0;
+            
+            document.getElementById('totalFlights').textContent = totalFlights;
+            document.getElementById('lowFlightsCount').textContent = lowFlights;
+            document.getElementById('avgAltitude').textContent = avgAltitude;
+            
+            const now = new Date().toLocaleTimeString();
+            activityData.push({ time: now, count: totalFlights });
+            if (activityData.length > 20) activityData.shift();
+            
+            activityChart.data.labels = activityData.map(d => d.time);
+            activityChart.data.datasets[0].data = activityData.map(d => d.count);
+            activityChart.update();
+        }
+
+        // Update historical stats
+        function updateHistoricalStats() {
+            // Count unique aircraft (not duplicate sightings)
+            const uniqueAircraft = new Set(historicalData.map(f => f.icao24));
+            document.getElementById('historicalTotal').textContent = uniqueAircraft.size;
+        }
+
+        // Update offenders list
+        function updateOffendersList() {
+            const listEl = document.getElementById('offendersList');
+            const offenders = Object.values(aircraftRegistry)
+                .filter(a => a.lowFlights >= 2)
+                .sort((a, b) => b.lowFlights - a.lowFlights);
+            
+            if (offenders.length === 0) {
+                listEl.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No repeat offenders yet</p>';
+                return;
+            }
+            
+            listEl.innerHTML = offenders.map(aircraft => {
+                const callsigns = Array.from(aircraft.callsigns).join(', ');
+                const nNumber = icaoToNNumber(aircraft.icao24) || 'Non-US';
+                
+                return `
+                    <div class="flight-item low">
+                        <div class="flight-callsign">
+                            <span>${callsigns}</span>
+                            <div>
+                                
+                                ${nNumber !== 'Non-US' ? `<button class="lookup-link" style="background: transparent; border: 1px solid #60a5fa; color: #60a5fa; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;" onclick="openFAARegistry('${nNumber}')">FAA Registry</button>` : ''}
+                                <button class="email-btn" onclick="openEmailModal('${aircraft.icao24}', '${callsigns}', ${aircraft.lowFlights})">Email Complaint</button>
+                            </div>
+                        </div>
+                        <div class="flight-details">
+                            ICAO24: ${aircraft.icao24} | N-Number: ${nNumber} | 
+                            Low altitude violations: ${aircraft.lowFlights} | 
+                            Total flights: ${aircraft.totalFlights} | 
+                            Last seen: ${new Date(aircraft.lastSeen).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update history list (last 100)
+        function updateHistoryList() {
+            const listEl = document.getElementById('historyList');
+            if (historicalData.length === 0) {
+                listEl.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No flight history yet</p>';
+                return;
+            }
+            
+            const recentFlights = [...historicalData].reverse().slice(0, 100);
+            listEl.innerHTML = recentFlights.map(flight => {
+                const nNumber = icaoToNNumber(flight.icao24) || 'Non-US';
+                
+                return `
+                    <div class="flight-item ${flight.isLow ? 'low' : ''}">
+                        <div class="flight-callsign">
+                            <span>${flight.callsign} ${flight.isLow ? '⚠️' : ''}</span>
+                            <div>
+                                
+                                ${nNumber !== 'Non-US' ? `<button class="lookup-link" style="background: transparent; border: 1px solid #60a5fa; color: #60a5fa; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;" onclick="openFAARegistry('${nNumber}')">FAA Registry</button>` : ''}
+                                <button class="email-btn" onclick="openEmailModal('${flight.icao24}', '${flight.callsign}', 1)">Email Complaint</button>
+                            </div>
+                        </div>
+                        <div class="flight-details">
+                            ${new Date(flight.timestamp).toLocaleString()} | 
+                            ICAO24: ${flight.icao24} | N-Number: ${nNumber} | 
+                            Altitude: ${flight.altitude} ft | 
+                            Speed: ${flight.speed || 'N/A'} knots | 
+                            Location: ${flight.location}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update all history list (every single flight)
+        // Update location breakdown
+        function updateLocationBreakdown() {
+            if (!locationChart) return;
+            
+            // Count flights by location, excluding "Unknown"
+            const locationCounts = {};
+            historicalData.forEach(flight => {
+                const loc = flight.location || 'Unknown';
+                if (loc !== 'Unknown') {
+                    locationCounts[loc] = (locationCounts[loc] || 0) + 1;
+                }
+            });
+            
+            const locations = Object.keys(locationCounts);
+            
+            // Hide chart if no named locations
+            const chartContainer = document.getElementById('locationChart').parentElement.parentElement;
+            const breakdownEl = document.getElementById('locationBreakdown');
+            
+            if (locations.length === 0) {
+                chartContainer.style.display = 'none';
+                breakdownEl.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px; grid-column: 1 / -1;">💡 Fill in the "Location" field before tracking to see breakdown by location</p>';
+                return;
+            }
+            
+            // Show chart
+            chartContainer.style.display = 'block';
+            
+            // Update chart
+            const counts = Object.values(locationCounts);
+            
+            locationChart.data.labels = locations;
+            locationChart.data.datasets[0].data = counts;
+            locationChart.update();
+            
+            // Update breakdown cards
+            breakdownEl.innerHTML = locations.map(location => {
+                const count = locationCounts[location];
+                const lowCount = historicalData.filter(f => f.location === location && f.isLow).length;
+                return `
+                    <div style="background: #1f2937; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+                        <div style="font-size: 1.2rem; font-weight: 600; color: #60a5fa; margin-bottom: 5px;">${location}</div>
+                        <div style="color: #94a3b8; font-size: 0.9rem;">
+                            <div>Total Flights: <strong style="color: #e2e8f0;">${count}</strong></div>
+                            <div>Low Altitude: <strong style="color: #ef4444;">${lowCount}</strong></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateAllHistoryList() {
+            // Update location breakdown first
+            updateLocationBreakdown();
+            
+            const listEl = document.getElementById('allHistoryList');
+            const countEl = document.getElementById('allHistoryCount');
+            
+            countEl.textContent = historicalData.length;
+            
+            if (historicalData.length === 0) {
+                listEl.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">No flight history yet</p>';
+                return;
+            }
+            
+            const allFlights = [...historicalData].reverse();
+            listEl.innerHTML = allFlights.map(flight => {
+                const nNumber = icaoToNNumber(flight.icao24) || 'Non-US';
+                
+                return `
+                    <div class="flight-item ${flight.isLow ? 'low' : ''}">
+                        <div class="flight-callsign">
+                            <span>${flight.callsign} ${flight.isLow ? '⚠️' : ''}</span>
+                            <div>
+                                
+                                ${nNumber !== 'Non-US' ? `<button class="lookup-link" style="background: transparent; border: 1px solid #60a5fa; color: #60a5fa; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;" onclick="openFAARegistry('${nNumber}')">FAA Registry</button>` : ''}
+                                <button class="email-btn" onclick="openEmailModal('${flight.icao24}', '${flight.callsign}', 1)">Email Complaint</button>
+                            </div>
+                        </div>
+                        <div class="flight-details">
+                            ${new Date(flight.timestamp).toLocaleString()} | 
+                            ICAO24: ${flight.icao24} | N-Number: ${nNumber} | 
+                            Altitude: ${flight.altitude} ft | 
+                            Speed: ${flight.speed || 'N/A'} knots | 
+                            Location: ${flight.location}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Export data
+        function exportData() {
+            const data = {
+                exportDate: new Date().toISOString(),
+                totalFlights: historicalData.length,
+                historicalFlights: historicalData,
+                aircraftRegistry: Object.values(aircraftRegistry).map(a => ({
+                    ...a,
+                    callsigns: Array.from(a.callsigns)
+                }))
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `helicopter-data-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Clear history
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all historical data? This cannot be undone.')) {
+                historicalData = [];
+                aircraftRegistry = {};
+                saveData();
+                updateHistoricalStats();
+                updateOffendersList();
+                updateHistoryList();
+                updateAllHistoryList();
+                alert('All historical data has been cleared.');
+            }
+        }
+
+        // Start tracking
+        async function startTracking() {
+            try {
+                console.log('Start button clicked');
+                const lat = parseFloat(document.getElementById('latitude').value);
+                const lon = parseFloat(document.getElementById('longitude').value);
+                const radius = parseFloat(document.getElementById('radius').value);
+                const threshold = parseFloat(document.getElementById('altitudeThreshold').value);
+                const locationName = document.getElementById('locationName').value;
+                const statusEl = document.getElementById('mapStatus');
+                const startBtn = document.getElementById('startBtn');
+                
+                console.log('Tracking params:', {lat, lon, radius, threshold});
+                
+                if (isTracking) {
+                    clearInterval(trackingInterval);
+                    isTracking = false;
+                    startBtn.textContent = 'Start Tracking';
+                    statusEl.textContent = 'Tracking stopped';
+                    statusEl.className = 'status';
+                    lastErrorShown = null; // Reset error tracking when stopping
+                    recordedThisSession.clear(); // Clear recorded flights
+                    
+                    // Clear activity chart data
+                    activityData = [];
+                    activityChart.data.labels = [];
+                    activityChart.data.datasets[0].data = [];
+                    activityChart.update();
+                    
+                    return;
+                }
+                
+                // Clear recorded set when starting new session
+                recordedThisSession.clear();
+                
+                console.log('Initializing map...');
+                initMap(lat, lon);
+                isTracking = true;
+                startBtn.textContent = 'Stop Tracking';
+                
+                async function update() {
+                    statusEl.textContent = 'Fetching data...';
+                    statusEl.className = 'status loading';
+                    
+                    const helicopters = await fetchHelicopters(lat, lon, radius);
+                    currentAircraftData = helicopters; // Store for filtering
+                    
+                    console.log('=== UPDATE CYCLE ===');
+                    console.log('Time:', new Date().toLocaleTimeString());
+                    console.log('Total aircraft fetched:', helicopters.length);
+                    console.log('Recorded this session so far:', recordedThisSession.size);
+                    const newOnes = helicopters.filter(h => !recordedThisSession.has(`${h[0]}_${h[1] || 'Unknown'}`));
+                    console.log('New aircraft this cycle:', newOnes.length);
+                    if (newOnes.length > 0) {
+                        console.log('New aircraft:', newOnes.map(h => `${h[1] || 'Unknown'} (${h[0]})`));
+                    }
+                    
+                    if (helicopters.length > 0) {
+                        statusEl.textContent = `${helicopters.length} aircraft detected`;
+                        statusEl.className = 'status success';
+                        
+                        helicopters.forEach(heli => {
+                            recordFlight(heli, threshold, locationName);
+                        });
+                        
+                        updateHistoricalStats();
+                        updateOffendersList();
+                        updateHistoryList();
+                        updateAllHistoryList();
+                    } else {
+                        statusEl.textContent = 'No aircraft in range';
+                        statusEl.className = 'status';
+                    }
+                
+                updateMap(helicopters, threshold);
+                updateFlightList(helicopters, threshold);
+                updateLowFlightsList(helicopters, threshold);
+                updateStats(helicopters, threshold);
+            }
+            
+            await update();
+            trackingInterval = setInterval(update, 10000); // Update every 10 seconds
+            } catch (error) {
+                console.error('Error in startTracking:', error);
+                alert('Error starting tracker: ' + error.message);
+            }
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Email modal functions
+        function openEmailModal(icao24, callsign, lowFlightCount) {
+            const modal = document.getElementById('emailModal');
+            const nNumber = icaoToNNumber(icao24) || 'Non-US Aircraft';
+            
+            document.getElementById('emailIcao').value = `${icao24} (${callsign}) - N-Number: ${nNumber}`;
+            
+            const defaultMessage = `Dear Sir/Madam,
+
+I am writing to file a formal complaint regarding persistent low-altitude helicopter flights over my residential neighborhood.
+
+Aircraft Details:
+- ICAO24: ${icao24}
+- N-Number: ${nNumber}
+- Callsign: ${callsign}
+- Number of low-altitude violations: ${lowFlightCount}
+
+These flights are causing significant noise pollution and disruption to our community. The aircraft has been documented flying below the recommended altitude on multiple occasions, creating excessive noise that disturbs residents, particularly during early morning and late evening hours.
+
+I have been systematically tracking these flights and have compiled detailed records including:
+- Timestamps of each occurrence
+- Altitude measurements
+- Flight frequency data
+
+I respectfully request that you:
+1. Investigate these flight patterns
+2. Ensure compliance with noise abatement procedures
+3. Consider alternative flight paths that minimize impact on residential areas
+
+I am happy to provide additional documentation and data to support this complaint.
+
+Thank you for your attention to this matter.
+
+Sincerely,
+[Your Name]
+[Your Address]
+[Your Phone Number]`;
+            
+            document.getElementById('emailBody').value = defaultMessage;
+            modal.style.display = 'block';
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').style.display = 'none';
+        }
+
+        function sendEmail() {
+            const recipient = document.getElementById('recipientEmail').value;
+            const subject = document.getElementById('emailSubject').value;
+            const body = document.getElementById('emailBody').value;
+            
+            const mailtoLink = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+        }
+
+        function copyEmailTemplate() {
+            const body = document.getElementById('emailBody').value;
+            navigator.clipboard.writeText(body).then(() => {
+                alert('Email template copied to clipboard!');
+            });
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('emailModal');
+            if (event.target == modal) {
+                closeEmailModal();
+            }
+        }
+
+        // Store geocoding results globally
+        let geocodeResultsData = [];
+        let searchTimeout;
+
+        // Geocode location to coordinates
+        async function geocodeLocation() {
+            const location = document.getElementById('locationName').value.trim();
+            const statusEl = document.getElementById('geocodeStatus');
+            const resultsSelect = document.getElementById('geocodeResults');
+            
+            if (!location || location.length < 3) {
+                statusEl.textContent = 'Tip: Use "City, State" format for best results';
+                statusEl.style.color = '#94a3b8';
+                resultsSelect.style.display = 'none';
+                return;
+            }
+            
+            statusEl.textContent = '🔍 Searching...';
+            statusEl.style.color = '#60a5fa';
+            resultsSelect.style.display = 'none';
+            
+            try {
+                // Use OpenStreetMap Nominatim for general search (works much better than postal code search)
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&addressdetails=1&limit=10`);
+                const data = await response.json();
+                
+                if (data.length > 0) {
+                    geocodeResultsData = data;
+                    
+                    if (data.length === 1) {
+                        // Only one result - auto-select it
+                        selectGeocodingResult(0);
+                    } else {
+                        // Multiple results - show dropdown
+                        statusEl.textContent = `✅ Found ${data.length} location${data.length > 1 ? 's' : ''} - Select one:`;
+                        statusEl.style.color = '#60a5fa';
+                        
+                        // Populate dropdown
+                        resultsSelect.innerHTML = '<option value="">-- Choose a location --</option>';
+                        data.forEach((result, index) => {
+                            const displayName = result.display_name;
+                            const option = document.createElement('option');
+                            option.value = index;
+                            option.textContent = displayName;
+                            resultsSelect.appendChild(option);
+                        });
+                        
+                        resultsSelect.style.display = 'block';
+                    }
+                } else {
+                    statusEl.textContent = '❌ Location not found. Try "City, State" format or just enter coordinates manually above.';
+                    statusEl.style.color = '#ef4444';
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+                statusEl.textContent = '❌ Error finding location';
+                statusEl.style.color = '#ef4444';
+            }
+        }
+
+        // Auto-search as user types (with debounce)
+        function handleLocationInput() {
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            // Set new timeout - search 500ms after user stops typing
+            searchTimeout = setTimeout(() => {
+                geocodeLocation();
+            }, 500);
+        }
+
+        // Select a geocoding result
+        function selectGeocodingResult(index) {
+            const result = geocodeResultsData[index];
+            const statusEl = document.getElementById('geocodeStatus');
+            
+            const lat = parseFloat(result.lat);
+            const lon = parseFloat(result.lon);
+            
+            document.getElementById('latitude').value = lat.toFixed(4);
+            document.getElementById('longitude').value = lon.toFixed(4);
+            
+            const location = result.display_name.split(',').slice(0, 3).join(',');
+            statusEl.textContent = `✅ Selected: ${location}`;
+            statusEl.style.color = '#16a34a';
+        }
+
+        // Initialize
+        document.getElementById('startBtn').addEventListener('click', startTracking);
+        
+        // Save threshold button
+        document.getElementById('saveThresholdBtn').addEventListener('click', function() {
+            const threshold = document.getElementById('altitudeThreshold').value;
+            saveData();
+            alert(`✅ Threshold saved! Your preferred altitude threshold (${threshold} ft) will be remembered.`);
+        });
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('clearBtn').addEventListener('click', clearHistory);
+        document.getElementById('geocodeBtn').addEventListener('click', geocodeLocation);
+        
+        // Update label when filter changes
+        
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('openskyPassword');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            // Change icon
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
+        
+        // Auto-search as user types in location field
+        document.getElementById('locationName').addEventListener('input', handleLocationInput);
+        
+        // Handle dropdown selection
+        document.getElementById('geocodeResults').addEventListener('change', function(e) {
+            if (e.target.value !== '') {
+                selectGeocodingResult(parseInt(e.target.value));
+            }
+        });
+        
+        // Allow Enter key to trigger geocoding immediately
+        document.getElementById('locationName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout); // Cancel the delayed search
+                geocodeLocation(); // Search immediately
+            }
+        });
+        
+        // Save credentials button
+        document.getElementById('saveCredsBtn').addEventListener('click', function() {
+            const username = document.getElementById('openskyUsername').value.trim();
+            const password = document.getElementById('openskyPassword').value.trim();
+            
+            if (!username || !password) {
+                alert('⚠️ Please enter both username and password.');
+                return;
+            }
+            
+            // Save credentials - they'll be tested when you start tracking
+            localStorage.setItem('openskyUsername', username);
+            localStorage.setItem('openskyPassword', password);
+            
+            this.textContent = '✅ Saved!';
+            alert('✅ Credentials saved!\n\nThey will be tested when you click "Start Tracking".\n\nIf tracking fails, you\'ll get an alert about invalid credentials.');
+            
+            const saveBtn = this;
+            setTimeout(() => {
+                saveBtn.textContent = 'Save Credentials';
+            }, 2000);
+        });
+        
+        // Load saved credentials on startup
+        const savedUsername = localStorage.getItem('openskyUsername');
+        const savedPassword = localStorage.getItem('openskyPassword');
+        if (savedUsername) document.getElementById('openskyUsername').value = savedUsername;
+        if (savedPassword) document.getElementById('openskyPassword').value = savedPassword;
+        
+        initChart();
+        loadData(); // Load saved data on startup
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                document.getElementById('latitude').value = position.coords.latitude.toFixed(4);
+                document.getElementById('longitude').value = position.coords.longitude.toFixed(4);
+            });
+        }
+    </script>
+</body>
+</html>
